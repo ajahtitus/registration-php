@@ -1,0 +1,259 @@
+<?php
+
+session_start();
+
+require "core/functions.php";
+
+$error = "";
+
+$courses = ['Forex', 'Grapic Designing', 'WhatsApp Tv Guide', 'Business Advice', 'Mini Importation', 'Digital Marketing', 'Freelancing'];
+
+if (isset($_POST['submit'])) {
+
+    $email = $_POST['email'];
+
+    $username = $_POST['username'];
+
+    $firstname = $_POST['firstname'];
+
+    $lastname = $_POST['lastname'];
+
+    $course  = $_POST['course'];
+
+    $password = $_POST['password'];
+
+    $coupon = $_POST['code'];
+
+    $referal = $_POST['referal'] ?? "";
+
+    $telephone = $_POST['telephone'];
+
+    if (valid_code($coupon)) {
+
+        if (
+
+            !empty($email) and
+
+            !empty($username) and
+
+            !empty($password) and
+
+            !empty($firstname) and
+
+            !empty($lastname) and
+
+            !empty($course) and
+
+            !empty($telephone)
+
+        ) {
+
+            if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
+
+                if (userexist($username, $email)) {
+
+                    $error = "<span class='msg error'>Username or email address already used on our system</span>";
+
+                } else {
+
+                    DB::insert("users", [
+
+                        "firstname" => $firstname,
+
+                        "lastname" => $lastname,
+
+                        "email" => $email,
+
+                        "telephone" => $telephone,
+
+                        "password" => $password,
+
+                        "course" => $course,
+
+                        "username" => $username,
+
+                        "date_register" => date("Y-m-d H:i:s"),
+
+                        "referal_withdraw_date" =>  date("Y-m-d H:i:s", strtotime("+" . (CONFIG['payout']['days'] + 10))),
+
+                        "referal_withdraw_date" =>  date("Y-m-d H:i:s", strtotime("+" . CONFIG['payout']['days']))
+
+                    ]);
+
+                    // add referal bonus
+
+                    if ($referal) {
+
+                        add_referal_bonus($referal, $username);
+
+                    }
+
+                    add_register_bonus($username);
+
+                    // delete coupon code
+
+                    delete_coupon_code($coupon);
+
+                    $_SESSION['account_created'] = "yes";
+
+                    header("Location: /success.php");
+
+                }
+
+            } else {
+
+                $error = "<span class='msg error'>Invalid Email given.</span>";
+
+            }
+
+        } else {
+
+            $error = "<span class='msg error'>All fields are required.</span>";
+
+        }
+
+    } else {
+
+        $error = "<span class='msg error'>Coupon code is invalid.</span>";
+
+    }
+
+}
+
+?>
+
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="/asset/css/form.css">
+
+    <title>Create account</title>
+
+</head>
+
+<body>
+
+    <div class="container">
+
+        <a href="/" >
+
+        <img src="/asset/images/logo.png" class="logo" alt="">
+
+        </a>
+
+        <form action="<?= $_SERVER['PHP_SELF'] ?>" method="post" class="app-card auth-form">
+
+            <h1>Sign Up</h1>
+
+            <?= $error ?>
+
+            <div class="form-control">
+
+                <label for="username">Username</label>
+
+                <input type="text" name="username" id="">
+
+            </div>
+
+            <div class="form-control">
+
+                <label for="username">Firstname</label>
+
+                <input type="text" name="firstname" id="">
+
+            </div>
+
+            <div class="form-control">
+
+                <label for="username">lastname</label>
+
+                <input type="text" name="lastname" id="">
+
+            </div>
+
+            <div class="form-control">
+
+                <label for="username">Email</label>
+
+                <input type="text" name="email" id="">
+
+            </div>
+
+            <div class="form-control">
+
+                <label for="username">Phone Number</label>
+
+                <input type="text" name="telephone" id="">
+
+            </div>
+
+            <div class="form-control">
+
+                <label for="username">Coupon Code</label>
+
+                <input type="text" name="code" id="">
+
+            </div>
+
+            <div class="form-control">
+
+                <label for="username">Pick a course</label>
+
+           
+
+                <select name="course" id="">
+
+                    <?php foreach ($courses as $c) : ?>
+
+                        <option value="<?= $c ?>"><?= $c ?></option>
+
+                    <?php endforeach; ?>
+
+                </select>
+
+            </div>
+
+            <div class="form-control">
+
+                <label for="username">Password</label>
+
+                <input type="text" name="password" id="">
+
+            </div>
+
+            <?php if (isset($_GET['user']) and !empty($_GET['user'])) : ?>
+
+                <div class="form-control">
+
+                    <label for="username">Referal Username</label>
+
+                    <input type="text" name="referal" id="" value="<?= $_GET['user'] ?>"contenteditable=“false”>
+
+                </div>
+
+            <?php endif; ?>
+
+            <div class="form-control">
+
+                <button type="submit" name="submit">Register</button>
+
+            </div>
+
+            <p class="info">Have an account? <a href="/login.php">Login</a></p>
+
+        </form>
+
+    </div>
+
+</body>
+
+</html>
